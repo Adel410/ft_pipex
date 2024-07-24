@@ -6,7 +6,7 @@
 /*   By: ahadj-ar <ahadj-ar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/27 14:29:45 by ahadj-ar          #+#    #+#             */
-/*   Updated: 2024/07/20 21:40:26 by ahadj-ar         ###   ########.fr       */
+/*   Updated: 2024/07/24 15:43:37 by ahadj-ar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,13 +29,16 @@ typedef struct s_pipex
 {
 	char	**cmds_paths;
 	char	***my_cmds;
+	int		pipefd[2];
+	int		infile;
+	int		outfile;
 }			t_pipex;
 
 // PROTOTYPES
 
 void		ft_error(int i);
 void		ft_parsing(char *argv[], char **envp, t_pipex *pipex);
-void		ft_exec_pipex(t_pipex *pipex, char *envp[]);
-void		ft_clear(t_pipex *pipex);
+void		ft_pipex(t_pipex *pipex, char *envp[], char *argv[]);
+void		ft_cleanup(t_pipex *pipex);
 
 #endif
