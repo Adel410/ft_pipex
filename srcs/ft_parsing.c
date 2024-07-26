@@ -61,7 +61,7 @@ void	ft_parsing(char *argv[], char **envp, t_pipex *pipex)
 	{
 		if (strncmp(envp[i], "PATH", 4) == 0)
 		{
-			path_to_cmds = strdup(envp[i] + 5);
+			path_to_cmds = ft_strdup(envp[i] + 5);
 			if (!path_to_cmds)
 				exit(1);
 			break ;
