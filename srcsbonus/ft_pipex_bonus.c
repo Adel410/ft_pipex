@@ -2,11 +2,11 @@
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   ft_pipex_bonus.c                                   :+:      :+:    :+:   */
-/*                                                    +:+ +:+        
+/*                                                    +:+ +:+
 	+:+     */
-/*   By: ahadj-ar <ahadj-ar@student.42.fr>          +#+  +:+      
+/*   By: ahadj-ar <ahadj-ar@student.42.fr>          +#+  +:+
 	+#+        */
-/*                                                +#+#+#+#+#+  
+/*                                                +#+#+#+#+#+
 	+#+           */
 /*   Created: 2024/08/02 14:07:15 by ahadj-ar          #+#    #+#             */
 /*   Updated: 2024/08/02 14:07:15 by ahadj-ar         ###   ########.fr       */
@@ -15,128 +15,117 @@
 
 #include "../include/pipex_bonus.h"
 
-void	ft_flag0(t_pipex *pipex, char **envp)
+void	ft_close_pipe(t_pipex *pipex, int *pipefd)
 {
-	int pid1;
-	int pid2;
-
-	if (pipe(pipex->pipefd) != 0)
-	{
-		ft_perror("pipe()");
-		ft_cleanup(pipex);
-	}
-	pid1 = fork();
-	if (pid1 == 0)
-		ft_exec1(pipex, envp);
-	pid2 = fork();
-	if (pid2 == 0)
-		ft_exec2(pipex, envp);
 	close(pipex->infile);
 	close(pipex->outfile);
-	close(pipex->pipefd[0]);
-	close(pipex->pipefd[1]);
-	wait(&pid1);
-	wait(&pid2);
+	pipex->i = 0;
+	while (pipex->i < (pipex->count_cmds - 1) * 2)
+	{
+		close(pipefd[pipex->i]);
+		pipex->i++;
+	}
+	free(pipefd);
 }
 
-void	ft_flag1(t_pipex *pipex, char **envp, char **av)
+void	ft_setup_redirection(t_pipex *pipex, int cmd_index, int *pipefd)
 {
-	int pid1;
-	int pid2;
-
-	if (pipe(pipex->pipefd) != 0)
+	pipex->i = -1;
+	if (cmd_index == 0)
 	{
-		ft_perror("pipe()");
-		ft_cleanup(pipex);
+		dup2(pipex->infile, STDIN_FILENO);
+		dup2(pipefd[1], STDOUT_FILENO);
+		close(pipex->outfile);
 	}
-	pid1 = fork();
-	if (pid1 == 0)
-		ft_absolute_exec1(pipex, av, envp);
-	pid2 = fork();
-	if (pid2 == 0)
-		ft_exec2(pipex, envp);
-	close(pipex->infile);
-	close(pipex->outfile);
-	close(pipex->pipefd[0]);
-	close(pipex->pipefd[1]);
-	wait(&pid1);
-	wait(&pid2);
+	else if (cmd_index == pipex->count_cmds - 1)
+	{
+		dup2(pipefd[(cmd_index - 1) * 2], STDIN_FILENO);
+		dup2(pipex->outfile, STDOUT_FILENO);
+		close(pipex->infile);
+	}
+	else
+	{
+		dup2(pipefd[(cmd_index - 1) * 2], STDIN_FILENO);
+		dup2(pipefd[cmd_index * 2 + 1], STDOUT_FILENO);
+		close(pipex->infile);
+		close(pipex->outfile);
+	}
+	while (++pipex->i < (pipex->count_cmds - 1) * 2)
+	{
+		if (pipex->i != (cmd_index - 1) * 2 && pipex->i != cmd_index * 2 + 1)
+			close(pipefd[pipex->i]);
+	}
 }
 
-void	ft_flag2(t_pipex *pipex, char **envp, char **av)
+void	ft_execute_cmd(t_pipex *pipex, char **envp, int cmd_index, int *pipefd)
 {
-	int pid1;
-	int pid2;
+	char	*test;
 
-	if (pipe(pipex->pipefd) != 0)
+	ft_setup_redirection(pipex, cmd_index, pipefd);
+	if (access(pipex->my_cmds[cmd_index][0], X_OK) == 0)
+		execve(pipex->my_cmds[cmd_index][0], pipex->my_cmds[cmd_index], envp);
+	else if (access(pipex->my_cmds[cmd_index][0], X_OK) != 0
+		&& (pipex->size_env == 30 || pipex->size_env == 0))
+		ft_exit_absolute_failed(pipex, cmd_index, pipefd);
+	else
 	{
-		ft_perror("pipe()");
-		ft_cleanup(pipex);
+		pipex->i = -1;
+		while (pipex->cmds_paths[++pipex->i])
+		{
+			test = ft_strjoin(pipex->cmds_paths[pipex->i],
+					pipex->my_cmds[cmd_index][0]);
+			if (access(test, X_OK) == 0)
+				execve(test, pipex->my_cmds[cmd_index], envp);
+			free(test);
+		}
 	}
-	pid1 = fork();
-	if (pid1 == 0)
-		ft_exec1(pipex, envp);
-	pid2 = fork();
-	if (pid2 == 0)
-		ft_absolute_exec2(pipex, av, envp);
-	close(pipex->infile);
-	close(pipex->outfile);
-	close(pipex->pipefd[0]);
-	close(pipex->pipefd[1]);
-	wait(&pid1);
-	wait(&pid2);
+	dup2(pipex->save_outfilefd, STDOUT_FILENO);
+	ft_close_pipe(pipex, pipefd);
+	ft_printf("%s : ", pipex->my_cmds[cmd_index][0]);
+	ft_cleanup(pipex, "command not found\n");
 }
 
-void	ft_flag3(t_pipex *pipex, char **envp, char **av)
+void	ft_execute_cmds(t_pipex *pipex, char **envp)
 {
-	int pid1;
-	int pid2;
+	int	*pipefd;
+	int	pid;
 
-	if (pipe(pipex->pipefd) != 0)
+	pipefd = malloc((pipex->count_cmds - 1) * 2 * sizeof(int));
+	if (!pipefd)
+		ft_cleanup(pipex, "Malloc error at ft_execute_cmds()");
+	pipex->i = -1;
+	while (++pipex->i < pipex->count_cmds - 1)
 	{
-		ft_perror("pipe()");
-		ft_cleanup(pipex);
+		if (pipe(pipefd + pipex->i * 2) == -1)
+			ft_cleanup(pipex, "Pipe() failed\n");
 	}
-	pid1 = fork();
-	if (pid1 == 0)
-		ft_absolute_exec1(pipex, av, envp);
-	pid2 = fork();
-	if (pid2 == 0)
-		ft_absolute_exec2(pipex, av, envp);
-	close(pipex->infile);
-	close(pipex->outfile);
-	close(pipex->pipefd[0]);
-	close(pipex->pipefd[1]);
-	wait(&pid1);
-	wait(&pid2);
+	pipex->i = -1;
+	while (++pipex->i < pipex->count_cmds)
+	{
+		pid = fork();
+		if (pid == -1)
+			ft_cleanup(pipex, "Fork() failed\n");
+		if (pid == 0)
+			ft_execute_cmd(pipex, envp, pipex->i, pipefd);
+	}
+	ft_close_pipe(pipex, pipefd);
+	while (wait(NULL) > 0)
+	{
+	}
 }
 
 void	ft_pipex(t_pipex *pipex, char **envp, char **av)
 {
-	int flag;
-	int get;
-	(void)envp;
-	(void)pipex;
-
-	flag = 0;
-	get = 1;
-	while (av[get])
+	if (pipex->here_doc == 0)
 	{
-		if (access(av[get], X_OK) == 0)
-			flag++;
-		get++;
+		if (ft_check_all(pipex, av) != 0)
+			ft_execute_cmds(pipex, envp);
 	}
-	printf("%d\n", flag);
-	// if (access(av[2], X_OK) == 0)
-	// 	flag = 1;
-	// if (access(av[3], X_OK) == 0)
-	// 	flag = flag + 2;
-	// if (flag == 0)
-	// 	ft_flag0(pipex, envp);
-	// else if (flag == 1)
-	// 	ft_flag1(pipex, envp, av);
-	// else if (flag == 2)
-	// 	ft_flag2(pipex, envp, av);
-	// else if (flag == 3)
-	// 	ft_flag3(pipex, envp, av);
+	else if (pipex->here_doc == 1)
+	{
+		if (ft_check_all_here_doc(pipex, av) != 0)
+			ft_execute_cmds(pipex, envp);
+	}
+	else
+		ft_cleanup(pipex, "Failed to execute command.\n");
 }

@@ -6,7 +6,7 @@
 /*   By: ahadj-ar <ahadj-ar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/20 16:01:43 by ahadj-ar          #+#    #+#             */
-/*   Updated: 2024/05/23 17:03:57 by ahadj-ar         ###   ########.fr       */
+/*   Updated: 2024/08/03 20:29:40 by ahadj-ar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,12 +40,3 @@ char	*ft_substr(char const *s, unsigned int start, size_t len)
 	ptr[go] = '\0';
 	return (ptr);
 }
-
-/*int		main(void)
-{
-	char *str = ft_strdup("0123456789");
-	char *s = ft_substr(str, 9, 10);
-
-	printf("%s", str);
-	printf("%s", s);
-}*/

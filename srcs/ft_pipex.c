@@ -15,132 +15,53 @@
 
 #include "../include/pipex.h"
 
-void	ft_flag0(t_pipex *pipex, char **envp)
+void	ft_close(t_pipex *pipex)
 {
-	int	pid1;
-	int	pid2;
-
-	if ((ft_check_access_1(pipex) == 0) && (ft_check_access_2(pipex) == 0))
-	{
-		if (pipe(pipex->pipefd) != 0)
-		{
-			ft_perror("pipe()");
-			ft_cleanup(pipex);
-		}
-		pid1 = fork();
-		if (pid1 == 0)
-			ft_exec1(pipex, envp);
-		pid2 = fork();
-		if (pid2 == 0)
-			ft_exec2(pipex, envp);
-		close(pipex->infile);
-		close(pipex->outfile);
-		close(pipex->pipefd[0]);
-		close(pipex->pipefd[1]);
-		wait(&pid1);
-		wait(&pid2);
-	}
-	else
-		ft_cleanup(pipex);
+	close(pipex->infile);
+	close(pipex->outfile);
+	close(pipex->pipefd[0]);
+	close(pipex->pipefd[1]);
 }
 
-void	ft_flag1(t_pipex *pipex, char **envp, char **av)
+void	ft_wait(int pid1, int pid2)
 {
-	int	pid1;
-	int	pid2;
-
-	if (ft_check_access_2(pipex) == 0)
-	{
-		if (pipe(pipex->pipefd) != 0)
-		{
-			ft_perror("pipe()");
-			ft_cleanup(pipex);
-		}
-		pid1 = fork();
-		if (pid1 == 0)
-			ft_absolute_exec1(pipex, av, envp);
-		pid2 = fork();
-		if (pid2 == 0)
-			ft_exec2(pipex, envp);
-		close(pipex->infile);
-		close(pipex->outfile);
-		close(pipex->pipefd[0]);
-		close(pipex->pipefd[1]);
-		wait(&pid1);
-		wait(&pid2);
-	}
-	else
-		ft_cleanup(pipex);
+	wait(&pid1);
+	wait(&pid2);
 }
 
-void	ft_flag2(t_pipex *pipex, char **envp, char **av)
-{
-	int	pid1;
-	int	pid2;
-
-	if (ft_check_access_1(pipex) == 0)
-	{
-		if (pipe(pipex->pipefd) != 0)
-		{
-			ft_perror("pipe()");
-			ft_cleanup(pipex);
-		}
-		pid1 = fork();
-		if (pid1 == 0)
-			ft_exec1(pipex, envp);
-		pid2 = fork();
-		if (pid2 == 0)
-			ft_absolute_exec2(pipex, av, envp);
-		close(pipex->infile);
-		close(pipex->outfile);
-		close(pipex->pipefd[0]);
-		close(pipex->pipefd[1]);
-		wait(&pid1);
-		wait(&pid2);
-	}
-	else
-		ft_cleanup(pipex);
-}
-
-void	ft_flag3(t_pipex *pipex, char **envp, char **av)
+void	ft_execute_cmds(t_pipex *pipex, char **envp, char **av)
 {
 	int	pid1;
 	int	pid2;
 
 	if (pipe(pipex->pipefd) != 0)
-	{
-		ft_perror("pipe()");
-		ft_cleanup(pipex);
-	}
+		ft_cleanup(pipex, "pipe()");
 	pid1 = fork();
 	if (pid1 == 0)
-		ft_absolute_exec1(pipex, av, envp);
+	{
+		if (pipex->size_env == 30 || pipex->size_env == 0 || access(av[2],
+				X_OK) == 0)
+			ft_absolute_exec(pipex, av, envp, 0);
+		else
+			ft_exec(pipex, envp, 0);
+	}
 	pid2 = fork();
 	if (pid2 == 0)
-		ft_absolute_exec2(pipex, av, envp);
-	close(pipex->infile);
-	close(pipex->outfile);
-	close(pipex->pipefd[0]);
-	close(pipex->pipefd[1]);
-	wait(&pid1);
-	wait(&pid2);
+	{
+		if (pipex->size_env == 30 || pipex->size_env == 0 || access(av[3],
+				X_OK) == 0)
+			ft_absolute_exec(pipex, av, envp, 1);
+		else
+			ft_exec(pipex, envp, 1);
+	}
+	ft_close(pipex);
+	ft_wait(pid1, pid2);
 }
 
 void	ft_pipex(t_pipex *pipex, char **envp, char **av)
 {
-	int	flag;
-
-	flag = 0;
-	if (access(av[2], X_OK) == 0)
-		flag = 1;
-	if (access(av[3], X_OK) == 0)
-		flag = flag + 2;
-	if (flag == 0)
-		ft_flag0(pipex, envp);
-	else if (flag == 1)
-		ft_flag1(pipex, envp, av);
-	else if (flag == 2)
-		ft_flag2(pipex, envp, av);
-	else if (flag == 3)
-		ft_flag3(pipex, envp, av);
+	if (ft_check_all(pipex, av) == 0)
+		ft_cleanup(pipex, "Failed to execute commands\n");
+	else
+		ft_execute_cmds(pipex, envp, av);
 }

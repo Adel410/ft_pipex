@@ -6,7 +6,7 @@
 #    By: ahadj-ar <ahadj-ar@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/07/20 12:38:18 by ahadj-ar          #+#    #+#              #
-#    Updated: 2024/08/02 17:28:09 by ahadj-ar         ###   ########.fr        #
+#    Updated: 2024/08/06 16:57:14 by ahadj-ar         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -31,10 +31,12 @@ SRC = 	./srcs/ft_error.c \
 		./srcs/main.c
 
 SRCBONUS = 	./srcsbonus/ft_error_bonus.c \
-			./srcsbonus/ft_exec_bonus.c \
 			./srcsbonus/ft_init_bonus.c \
 			./srcsbonus/ft_parsing_bonus.c \
 			./srcsbonus/ft_pipex_bonus.c \
+			./srcsbonus/ft_access_bonus.c \
+			./srcsbonus/ft_heredoc.c \
+			./srcsbonus/get_next_line.c \
 			./srcsbonus/main_bonus.c
 
 OBJ = $(SRC:.c=.o)

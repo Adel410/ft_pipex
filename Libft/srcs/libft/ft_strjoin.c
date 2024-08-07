@@ -6,12 +6,12 @@
 /*   By: ahadj-ar <ahadj-ar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/20 16:33:14 by ahadj-ar          #+#    #+#             */
-/*   Updated: 2024/05/22 14:15:26 by ahadj-ar         ###   ########.fr       */
+/*   Updated: 2024/08/06 19:22:10 by ahadj-ar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "libft.h"
-//WORKS BUT NOT SURE ABOUT MOULINETTE CHECK
+
 static int	ft_strlen_stat(const char *str)
 {
 	int	i;

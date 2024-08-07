@@ -6,7 +6,7 @@
 /*   By: ahadj-ar <ahadj-ar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/07/20 12:56:08 by ahadj-ar          #+#    #+#             */
-/*   Updated: 2024/08/02 17:03:08 by ahadj-ar         ###   ########.fr       */
+/*   Updated: 2024/08/07 14:35:58 by ahadj-ar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,31 +39,42 @@ void	ft_error(int i)
 	}
 }
 
-void	ft_perror(char *str)
+void	ft_exit_absolute_failed(t_pipex *pipex, int cmd_index, int *pipefd)
 {
-	ft_putstr(str);
-	perror(" ");
-	exit(0);
+	dup2(pipex->save_outfilefd, STDOUT_FILENO);
+	ft_close_pipe(pipex, pipefd);
+	ft_printf("%s : ", pipex->my_cmds[cmd_index][0]);
+	ft_cleanup(pipex, "command not found\n");
 }
 
-void	ft_cleanup(t_pipex *pipex)
+void	ft_cleanup(t_pipex *pipex, char *str)
 {
-	int	i;
+	int	j;
 
-	// if (pipex->my_cmds[0] != NULL)
-	// 	ft_free_split(pipex->my_cmds[0]);
-	// if (pipex->my_cmds[1] != NULL)
-	// 	ft_free_split(pipex->my_cmds[1]);
-	i = 0;
-	if (pipex->my_cmds != NULL)
+	ft_printf(str);
+	pipex->i = 0;
+	if (pipex->my_cmds)
 	{
-		while (pipex->my_cmds[i])
+		while (pipex->my_cmds[pipex->i])
 		{
-			ft_free_split(pipex->my_cmds[i]);
+			j = 0;
+			while (pipex->my_cmds[pipex->i][j])
+			{
+				free(pipex->my_cmds[pipex->i][j++]);
+			}
+			free(pipex->my_cmds[pipex->i++]);
 		}
 		free(pipex->my_cmds);
 	}
-	if (pipex->cmds_paths != NULL)
+	if (pipex->cmds_paths)
 		ft_free_split(pipex->cmds_paths);
-	exit(1);
+	close(pipex->save_outfilefd);
+	exit(0);
+}
+
+char	*ft_free(char *str)
+{
+	if (str)
+		free(str);
+	return (NULL);
 }

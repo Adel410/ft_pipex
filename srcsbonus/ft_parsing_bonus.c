@@ -6,127 +6,83 @@
 /*   By: ahadj-ar <ahadj-ar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/08/02 14:07:22 by ahadj-ar          #+#    #+#             */
-/*   Updated: 2024/08/02 17:03:21 by ahadj-ar         ###   ########.fr       */
+/*   Updated: 2024/08/07 15:08:41 by ahadj-ar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../include/pipex_bonus.h"
 
-void	ft_fix(t_pipex *pipex)
+void	ft_fix(t_pipex *pipex, char **envp)
 {
-	if (pipex->my_cmds[0][0][0] == '/' && pipex->my_cmds[1][0][0] == '/')
+	if (pipex->here_doc == 0)
 	{
-		printf("ici\n");
-		exit(1);
+		if (ft_check_absolute_access(pipex) != 0)
+		{
+			ft_execute_cmds(pipex, envp);
+			ft_cleanup(pipex, "");
+		}
+	}
+	if (pipex->here_doc == 1)
+	{
+		if (ft_check_absolute_access_here_doc(pipex) != 0)
+		{
+			ft_execute_cmds(pipex, envp);
+			ft_cleanup(pipex, "");
+		}
 	}
 	else
-	{
-		ft_printf("Env path not found.\n");
-		ft_cleanup(pipex);
-	}
-}
-
-void	ft_strcpy(char *dest, const char *src)
-{
-	int	i;
-
-	i = 0;
-	while (src[i])
-	{
-		dest[i] = src[i];
-		i++;
-	}
-	dest[i] = '\0';
+		ft_cleanup(pipex, "Env path not found.\n");
 }
 
 void	ft_add_slash_to_paths(char **paths)
 {
 	int		i;
 	char	*new_path;
-	int		len;
+	size_t	len;
 
-	i = 0;
-	while (paths[i])
+	i = -1;
+	while (paths[++i])
 	{
-		len = strlen(paths[i]);
+		len = ft_strlen(paths[i]);
 		if (paths[i][len - 1] != '/')
 		{
 			new_path = ft_calloc(len + 2, sizeof(char));
 			if (!new_path)
 				return ;
-			ft_strcpy(new_path, paths[i]);
+			ft_strlcpy(new_path, paths[i], len + 1);
 			new_path[len] = '/';
 			new_path[len + 1] = '\0';
 			free(paths[i]);
 			paths[i] = new_path;
 		}
-		i++;
-	}
-}
-
-void	ft_get_my_cmds(t_pipex *pipex, char **av)
-{
-	int	i;
-	int	j;
-
-	i = 0;
-	j = 2;
-	pipex->my_cmds = malloc(sizeof(char **) * pipex->count_cmds);
-	if (!pipex->my_cmds)
-	{
-		ft_cleanup(pipex);
-	}
-	while (i < pipex->count_cmds)
-	{
-		pipex->my_cmds[i] = ft_split(av[j], ' ');
-		{
-			if (!pipex->my_cmds[i])
-			{
-				ft_cleanup(pipex);
-			}
-		}
-		i++;
-		j++;
 	}
 }
 
 void	ft_parsing(char *argv[], char **envp, t_pipex *pipex)
 {
 	char	*path_to_cmds;
-	// int		j;
-	// int		k;
+	int		i;
 
-	pipex->i = 0;
 	path_to_cmds = NULL;
-	if (pipex->size_env == 0 || pipex->size_env == 30)
-		ft_fix(pipex);
-	while (envp[pipex->i])
+	i = -1;
+	if (pipex->size_env == 30 || pipex->size_env == 0)
+		ft_fix(pipex, envp);
+	else
 	{
-		if (strncmp(envp[pipex->i], "PATH", 4) == 0)
+		while (envp[++i])
 		{
-			path_to_cmds = ft_strdup(envp[pipex->i] + 5);
-			if (!path_to_cmds)
-				exit(1);
-			break ;
+			if (ft_strncmp(envp[i], "PATH=", 5) == 0)
+			{
+				path_to_cmds = ft_strdup(envp[i] + 5);
+				if (!path_to_cmds)
+					ft_cleanup(pipex, "PATH in envp not found\n");
+				break ;
+			}
 		}
-		pipex->i++;
+		if (!path_to_cmds)
+			ft_pipex(pipex, envp, argv);
+		pipex->cmds_paths = ft_split(path_to_cmds, ':');
+		ft_add_slash_to_paths(pipex->cmds_paths);
+		free(path_to_cmds);
 	}
-	pipex->cmds_paths = ft_split(path_to_cmds, ':');
-	ft_add_slash_to_paths(pipex->cmds_paths);
-	free(path_to_cmds);
-	ft_get_my_cmds(pipex, argv);
-	if (!pipex->my_cmds)
-		ft_cleanup(pipex);
-	// j = 0;
-	// k = 0;
-	// while (pipex->my_cmds[j])
-	// {
-	// 	k = 0;
-	// 	while (pipex->my_cmds[j][k])
-	// 	{
-	// 		printf("%s\n", pipex->my_cmds[j][k]);
-	// 		k++;
-	// 	}
-	// 	j++;
-	// }
 }
